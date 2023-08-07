@@ -3,6 +3,8 @@ Atto Menu
 
 Copyright 2023 by George F. Rice
 
+[JavaDoc](https://prof-rice.github.io/attomenu/api/attomenu/package-summary.html) | [Example-Application](pizza/PizzaPearl.java)
+
 Provides Java classes to simplify writing a multi-level menu-driven console application,
 using simple menu constructs analogous to javax.swing.JMenu and JMenuItem. Support is also 
 provided for easily selecting an element of an array or List, and for navigating the file system 
