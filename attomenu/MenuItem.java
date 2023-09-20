@@ -25,6 +25,9 @@ import java.util.Objects;
 /**
  * Associates menu text with a response when selected.
  * <p>
+ * A character key may be optionally specified for selecting this MenuItem object.
+ * If omitted, a numeric key will be generated instead.
+ * <p>
  * MenuItem is philisophically similar to Swing's {@link javax.swing.JMenuItem}, except that
  * MenuItem relies on {@link java.lang.Runnable} rather than {@link java.awt.event.ActionListener}
  * for the response.
@@ -32,24 +35,45 @@ import java.util.Objects;
  * When printed, MenuItem prints the menuText. Calling {@link run()} invokes the menuResponse.
  *
  * @author             Professor George F. Rice
- * @version            1.0
+ * @version            1.1
  * @since              1.0
  * @license.agreement  Gnu General Public License 3.0
  * @see Menu
  */
 public class MenuItem implements Runnable {
     /**
+     * Initializes a MenuItem object with an optional character key.
+     *
      * @param menuText      Text to display when the menu is printed
      * @param menuResponse  Object that delegates to the menu item response
+     * @param key           Alternate character to select this menu item
+     * @since               1.1
      */
-    public MenuItem(Object menuText, Runnable menuResponse) {
+    public MenuItem(Object menuText, Runnable menuResponse, char key) {
+        this.key = key;
         this.menuText = menuText;
         this.menuResponse = menuResponse;
     }
     /**
+     * Initializes a MenuItem object with no character key.
+     *
+     * @param menuText      Text to display when the menu is printed
+     * @param menuResponse  Object that delegates to the menu item response
+     * @since               1.0
+     */
+    public MenuItem(Object menuText, Runnable menuResponse) {
+        this(menuText, menuResponse, ' ');
+    }
+    /**
+     * Returns the alternate char to select this MenuItem (space if unset)
+     */
+    public char getKey() {
+        return key;
+    }
+    /**
      * Returns the result of the menuText toString() method.
      */
-   @Override
+    @Override
     public String toString() {
         return menuText.toString();
     }
@@ -60,11 +84,14 @@ public class MenuItem implements Runnable {
     public void run() {
         menuResponse.run();
     }
+    private char key;               // Alternate character to select this menu item
     private Object menuText;        // The text displayed to the user
     private Runnable menuResponse;  // run() is called on this object when selected
 
     /**
      * Returns the hash code value for this menuItem.
+     *
+     * @returns a hash code value for this object.
      */
     @Override
     public int hashCode() {

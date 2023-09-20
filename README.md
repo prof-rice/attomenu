@@ -11,7 +11,9 @@ provided for easily selecting an element of an array or List, and for navigating
 to select or create a file or directory.
 
 The menus may be defined and run in the constructor, with each menu item specifying its
-text and the action to take when selected. The run() method provides the main loop.
+text, the action to take when selected, and an optional character key that may be typed
+from the console to select it (otherwise an integer is provided). The run() method provides 
+the main loop.
 
 Here's a simple partial application to illustrate some attomenu capabilities.
 
@@ -22,8 +24,8 @@ class Demo {
         private Double dog;
         private List<Dog> dogs;
         submenu = new Menu("Sub Menu", null,
-            new MenuItem("Turn left", () -> turnLeft()),
-            new MenuItem("Turn right", () -> turnRight()),
+            new MenuItem("Turn left", () -> turnLeft(), 'L'),
+            new MenuItem("Turn right", () -> turnRight(), 'R'),
         );
         menu = new Menu("Main Menu", data, 
             new MenuItem("Open data", () -> openData()),
@@ -40,6 +42,7 @@ class Demo {
 }
 ```
 
-Yes, the name is a nod to picocli. Note that atto is *much* smaller than pico. :)
+Yes, the name is a nod to picocli. Note that atto is *much* smaller and less comprehensive
+than pico. :)
 
 GitHub: https://github.com/prof-rice/attomenu.git

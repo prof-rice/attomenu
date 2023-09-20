@@ -30,15 +30,24 @@ import java.io.FilenameFilter;
 /**
  * A simple multi-level console menu system using the Observer pattern.
  * <p>
- * Each {@link MenuItem} specifies the text for a menu entry along with the Runnable object
- * (a lambda is often preferred) to invoke when that menu entry is selected.
+ * Each {@link MenuItem} specifies the text for a menu entry, the Runnable object
+ * (a lambda is often preferred) to invoke when that menu entry is selected, and 
+ * an optional key character for selecting that MenuItem from the keyboard.
  * <p>
- * Menu uses the sequential non-negative integers for selecting a MenuItem using console
- * input. The Menu can be runOnce() for a single selection and response, or simply run() 
- * for many selections and responses until the user selects 'x' to exit that Menu.
+ * Menu uses the sequential non-negative integers, the key character specified to MenuItem,
+ * or both for selecting a MenuItem using console input. If {@link SHOW_CHAR} is false,
+ * only integer keys are used. If {@link SHOW_INT} is false, only the key character
+ * is used (but if not available, an integer key will be substitued). If both are true,
+ * character keys will be used when available along with integer keys.
  * <p>
- * Menu also provides static select() methods for selecting one element from an array or 
- * List of objects, and a static selectFile() method to select a file or directory.
+ * The Menu can be runOnce() for a single selection and response, or simply run() 
+ * for many selections and responses until the user selects {@link EXIT_CHAR} 
+ * ('x' by default) to exit that Menu.
+ * <p>
+ * Menu also provides static {@link select(Object,Object[])} and {@link select(Object,List)} 
+ * methods for selecting one element from an array or List of objects, and a static 
+ * {@link selectFile(Object, File, FilenameFilter)} method 
+ * to select a file or directory. These static select methods always use integer keys.
  * <p>
  * Menu is philisophically similar to Swing's JMenu, using MenuItem instead of JMenuItem
  * for the menu elements.
@@ -46,11 +55,29 @@ import java.io.FilenameFilter;
  * See the Pizza Pearl example application in package pizza for ideas.
  *
  * @author             Professor George F. Rice
- * @version            1.0
+ * @version            1.1
  * @since              1.0
  * @license.agreement  Gnu General Public License 3.0
  */
 public class Menu {
+    /**
+     * The char command to exit the menu ('x' is default, ' ' is not permitted).
+     * 
+     * @since 1.1
+     */
+    public static char EXIT_CHAR = 'x';
+    /**
+     * Enables integer key in menus (always shown if no character key is available).
+     * 
+     * @since 1.1
+     */
+    public static boolean SHOW_INT = true;
+    /**
+     * Enables character key in menus when available.
+     * 
+     * @since 1.1
+     */
+    public static boolean SHOW_CHAR = true;
     /**
      * Constructs a new Menu with all menu items and associated callbacks.
      * 
@@ -58,8 +85,11 @@ public class Menu {
      * @param data       Printed after the menu items and before the prompt (if not null)
      * @param menuItems  List of menu item text and observer / callbacks
      * @since 1.0
+     * @throws IllegalArgumentException if EXIT_CHAR is set to a space
      */
     public Menu(Object title, Object data, MenuItem... menuItems) {
+        if(EXIT_CHAR == ' ') 
+            throw new IllegalArgumentException("EXIT_CHAR cannot be ' '");
         this.title = title;
         this.data = data;
         this.menuItems = menuItems;
@@ -70,24 +100,38 @@ public class Menu {
      * @return null if selected action succeeded, user input if an error occurred
      */
     public String runOnce() {
-        System.out.print(this); // Print the menu
-        String input = System.console().readLine();
-        try {
-            int item = Integer.parseInt(input);
-            menuItems[item].run();
-            input = null;       // Null indicates a valid response was handled
+        System.out.print(this);  // Print the menu and get the user's selection
+        String input = System.console().readLine().trim();
+        final int INVALID = -1;  // Must be <0 to trigger exception below
+        int index = INVALID;     // Assume invalid until proven otherwise
+        try {                    // Try to accept numeric input
+            index = Integer.parseInt(input);
         } catch(Exception e) {
+        }
+        if(index == INVALID && SHOW_CHAR) { // If not, check for a char key
+            char c = input.charAt(0);
+            for(int i=0; i<menuItems.length; ++i) {
+                if(c == menuItems[i].getKey()) {
+                    index = i;
+                    break;
+                }
+            }
+        }
+        try {
+            menuItems[index].run();
+            input = null;       // Null indicates a valid response was handled
+        }catch(Exception e) {
         }
         return input;
     }
     /**
-     * The main loop that repeatedly calls runOnce until the user enters 'x'.
+     * The main loop that repeatedly calls runOnce until the user enters EXIT_CHAR.
      */
     public void run() {
         while(true) {
             String input = runOnce(); // Print menu and get response
             if(input != null) {       // If not null, response was undefined
-                if(Character.toLowerCase(input.charAt(0)) == 'x') break;
+                if(Character.toLowerCase(input.charAt(0)) == EXIT_CHAR) break;
                 System.err.println("Invalid menu selection: " + input);
             }
         }
@@ -102,7 +146,7 @@ public class Menu {
      * @param <E>    The type of elements in list
      * @param title  Displayed above the menu (if not null)
      * @param list   The List of elements to offer in the menu
-     * @return       The index of the selected element, or -1 if 'x' was selected
+     * @return       The index of the selected element, or -1 if no selection
      */
     public static <E> int select(Object title, List<E> list) {
         return select(title, list.toArray(new String[list.size()]));
@@ -111,14 +155,14 @@ public class Menu {
      * Provides a menu containing all array members so the user can select one.
      * 
      * The menu items correspond to the index of elements. If the user enters
-     * an out of bounds index or any text other than 'x', an error message 
-     * is displayed followed by the prompt. If the user enters 'x', -1 is returned
+     * an out of bounds index or an invalid character command, an error message 
+     * is displayed followed by the prompt. If the user exits, -1 is returned
      * to signal that the user declined to select an element.
      * 
      * 
      * @param title  Displayed above the menu (if not null)
      * @param list   The array of elements to offer in the menu
-     * @return       The index of the selected element, or -1 if 'x' was selected
+     * @return       The index of the selected element, or -1 if no selection
      */
     public static int select(Object title, Object[] list) {
         if(list.length < 2) return list.length-1; // trivial selections
@@ -129,7 +173,7 @@ public class Menu {
             String input = System.console().readLine();
             try {
                 if(input != null) {
-                    if(Character.toLowerCase(input.charAt(0)) == 'x') {
+                    if(Character.toLowerCase(input.charAt(0)) == EXIT_CHAR) {
                         selection = -1;
                     } else {
                         selection = Integer.parseInt(input);
@@ -157,14 +201,14 @@ public class Menu {
      * 
      * Otherwise, if a subdirectory is selected it is opened and the method repeats.
      * If a file is selected it is returned. If the user enters an out of bounds index 
-     * or any text other than 'x', an error message is displayed followed by the prompt. 
-     * If the user enters 'x', null is returned to signal that the user declined to 
+     * or an invalid char command, an error message is displayed followed by the prompt. 
+     * If the user enters EXIT_CHAR, null is returned to signal that the user declined to 
      * select a file or directory.
      * 
      * @param title    Displayed above the menu (if not null)
      * @param starting The first directory to be listed, or user.home if null
      * @param filter   A FilenameFilter object (filter hidden files if null)
-     * @return         The selected File object, or null if 'x' was selected
+     * @return         The selected File object, or null if no file was selected
      */
     public static File selectFile(Object title, File starting, FilenameFilter filter) {
         if(title == null) title = "";
@@ -187,7 +231,7 @@ public class Menu {
                 filenames[3] = "++ (specify a new filename here)";
                 for(int i=0; i<files.length; ++i) 
                     filenames[i+4] = files[i].getName() + 
-                        (files[i].isDirectory() ? File.pathSeparator : "");
+                        (files[i].isDirectory() ? File.separator : "");
                 selection = select("\n" + title + "\nAt " + current.getPath(), filenames);
                 switch(selection) {
                     case -1: current = null; break; // User canceled the selection
@@ -218,10 +262,22 @@ public class Menu {
      */
     private static String buildMenu(Object title, Object data, Object[] items) {
         StringBuilder sb = new StringBuilder(title.toString() + "\n\n");
-        for(int i = 0; i < items.length; ++i)
-            sb.append(i + ") " + items[i].toString() + '\n');
+        for(int i = 0; i < items.length; ++i) {
+            String key = "";                        // Begin building the selection key(s)
+            char c = ' ';                           // Default char key is ' ' (none)
+            if(SHOW_CHAR && items[i] instanceof MenuItem) {
+                c = ((MenuItem) items[i]).getKey(); // Get char key (' ' if not specified)
+            }
+            if(SHOW_INT || c == ' ') {              // Add the index
+                key += i;
+                if(c != ' ') key += ',';            // Add , if both index & char
+            }
+            if(c != ' ') key += c;                  // Add char key if available
+            sb.append(key + ") " + items[i].toString() + '\n');
+        }
         if(data != null) sb.append("\n\n" + data + "\n\n");
-        sb.append("\nSelection ('x' to exit): ");
+        String exitPrompt = (EXIT_CHAR != ' ') ? "('" + EXIT_CHAR + "' to exit)" : "";
+        sb.append("\nSelection" + exitPrompt + ": ");
         return sb.toString();
     }
     /**
@@ -233,6 +289,8 @@ public class Menu {
     }
     /**
      * Returns the hash code value for this menu.
+     *
+     * @returns a hash code value for this object.
      */
     @Override
     public int hashCode() {

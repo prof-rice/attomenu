@@ -11,28 +11,32 @@ import java.io.FileWriter;
 
 public class PizzaPearl {
     public static void main(String[] args) {
-        new PizzaPearl(); // Instance and run a Pizza Pearl franchise
+        // Menu.EXIT_CHAR = '!';   // Change the exit character to ! (NEVER set to ' ')
+        // Menu.SHOW_INT = false;  // Don't show int keys unless no char is available
+        // Menu.SHOW_CHAR = false; // Never show char keys even when available
+        new PizzaPearl();       // Instance and run a Pizza Pearl franchise
     }
     public PizzaPearl() {
         // pizzaToppings.run() shows the interactive menu.
         // When a selection is made, the lambda (code after () -> ) is run
         pizzaToppings = new Menu("Pizza Toppings", toppings,
-            new MenuItem("Remove a Topping", () -> removeToppingFromPizza()),
-            new MenuItem("Extra Cheese", () -> toppings.add("Extra Cheese")),
-            new MenuItem("Pepperoni", () -> toppings.add("Pepperoni")),
-            new MenuItem("Sausage", () -> toppings.add("Sausage")),
-            new MenuItem("Onions", () -> toppings.add("Onions"))
+            new MenuItem("Remove a Topping", () -> removeToppingFromPizza(), 'r'),
+            new MenuItem("Extra Cheese", () -> toppings.add("Extra Cheese"), 'c'),
+            new MenuItem("Pepperoni", () -> toppings.add("Pepperoni"), 'p'),
+            new MenuItem("Sausage", () -> toppings.add("Sausage"), 's'),
+            new MenuItem("Onions", () -> toppings.add("Onions"), 'o')
         );
         pizzaPearlMenu = new Menu("Place an Order", order,
-            new MenuItem("Remove an Item", () -> removeItemFromOrder()),
-            new MenuItem("Pizza!", () -> orderPizza()),
-            new MenuItem("Salad", () -> orderSalad()),
-            new MenuItem("Soda", () -> orderSoda())
+            new MenuItem("Remove an Item", () -> removeItemFromOrder(), 'r'),
+            new MenuItem("Pizza!", () -> orderPizza(), 'p'),
+            new MenuItem("Salad", () -> orderSalad(), 's'),
+            new MenuItem("Soda", () -> orderSoda(), 'd')
         );
         menu = new Menu("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nPizza Pearl Main Menu", orders,
-            new MenuItem("List orders", () -> System.out.println(orders)),
-            new MenuItem("Save orders", () -> saveOrders()),
-            new MenuItem("Place an order", () -> placeAnOrder()));
+            new MenuItem("List orders", () -> System.out.println(orders), 'l'),
+            new MenuItem("Save orders", () -> saveOrders(), 's'),
+            new MenuItem("Place an order", () -> placeAnOrder(), 'p')
+        );
         menu.run();
     }
     private void saveOrders() {
