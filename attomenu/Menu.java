@@ -31,13 +31,14 @@ import java.io.FilenameFilter;
  * A simple multi-level console menu system using the Observer pattern.
  * <p>
  * Each {@link MenuItem} specifies the text for a menu entry, the Runnable object
- * (a lambda is often preferred) to invoke when that menu entry is selected, and 
- * an optional key character for selecting that MenuItem from the keyboard.
+ * (a lambda is often preferred) to invoke when that menu entry is selected,  
+ * an optional key character for selecting that MenuItem from the keyboard,
+ * and optional help text to print when requested.
  * <p>
  * Menu uses the sequential non-negative integers, the key character specified to MenuItem,
  * or both for selecting a MenuItem using console input. If {@link SHOW_CHAR} is false,
  * only integer keys are used. If {@link SHOW_INT} is false, only the key character
- * is used (but if not available, an integer key will be substitued). If both are true,
+ * is used (but if not available, an integer key will be substituted). If both are true,
  * character keys will be used when available along with integer keys.
  * <p>
  * The Menu can be runOnce() for a single selection and response, or simply run() 
@@ -48,6 +49,12 @@ import java.io.FilenameFilter;
  * methods for selecting one element from an array or List of objects, and a static 
  * {@link selectFile(Object, File, FilenameFilter)} method 
  * to select a file or directory. These static select methods always use integer keys.
+ * <p>
+ * If HELP_CHAR is not a space, the user will be prompted to type it for help. If typed
+ * alone at a command prompt, help provided in the Menu constructor will be displayed.
+ * If followed by a space and a menu key, any help provided with that MenuItem
+ * will be displayed instead. If no help was provided for that MenuItem, then the
+ * message will be "No help available for 'key'."
  * <p>
  * Menu is philisophically similar to Swing's JMenu, using MenuItem instead of JMenuItem
  * for the menu elements.
@@ -67,6 +74,12 @@ public class Menu {
      */
     public static char EXIT_CHAR = 'x';
     /**
+     * The char command to display help ('?' is default, ' ' offers no help).
+     * 
+     * @since 1.1
+     */
+    public static char HELP_CHAR = '?';
+    /**
      * Enables integer key in menus (always shown if no character key is available).
      * 
      * @since 1.1
@@ -83,16 +96,30 @@ public class Menu {
      * 
      * @param title      Printed before the menu items (if not null)
      * @param data       Printed after the menu items and before the prompt (if not null)
+     * @param help       Printed on request (if not null) to help the user
+     * @param menuItems  List of menu item text and observer / callbacks
+     * @since 1.0
+     * @throws IllegalArgumentException if EXIT_CHAR is set to a space
+     */
+    public Menu(Object title, Object data, String help, MenuItem... menuItems) {
+        if(EXIT_CHAR == ' ') 
+            throw new IllegalArgumentException("EXIT_CHAR cannot be ' '");
+        this.title = title;
+        this.data = data;
+        this.help = help;
+        this.menuItems = menuItems;
+    }
+    /**
+     * Constructs a new Menu with all menu items and associated callbacks.
+     * 
+     * @param title      Printed before the menu items (if not null)
+     * @param data       Printed after the menu items and before the prompt (if not null)
      * @param menuItems  List of menu item text and observer / callbacks
      * @since 1.0
      * @throws IllegalArgumentException if EXIT_CHAR is set to a space
      */
     public Menu(Object title, Object data, MenuItem... menuItems) {
-        if(EXIT_CHAR == ' ') 
-            throw new IllegalArgumentException("EXIT_CHAR cannot be ' '");
-        this.title = title;
-        this.data = data;
-        this.menuItems = menuItems;
+        this(title, data, null, menuItems);
     }
     /**
      * Displays the menu and executes the callback for one selection by the user.
@@ -102,14 +129,26 @@ public class Menu {
     public String runOnce() {
         System.out.print(this);  // Print the menu and get the user's selection
         String input = System.console().readLine().trim();
+        System.out.println();
+        if(input.isEmpty()) return " "; // Invalid input
+        
+        Help helpRequested = Help.NONE;  // Check if help is requested
+        if(input.charAt(0) == HELP_CHAR) {
+            if(input.length() == 1) {
+                helpRequested = Help.MAIN;
+            } else {
+                helpRequested = Help.SELECTION;
+                input = input.substring(1).trim(); // Parse the selection requested
+            }
+        }
         final int INVALID = -1;  // Must be <0 to trigger exception below
-        int index = INVALID;     // Assume invalid until proven otherwise
+        int index = INVALID;     // Assume an invalid selection  until proven otherwise
         try {                    // Try to accept numeric input
             index = Integer.parseInt(input);
         } catch(Exception e) {
         }
+        char c = input.charAt(0);
         if(index == INVALID && SHOW_CHAR) { // If not, check for a char key
-            char c = input.charAt(0);
             for(int i=0; i<menuItems.length; ++i) {
                 if(c == menuItems[i].getKey()) {
                     index = i;
@@ -118,9 +157,21 @@ public class Menu {
             }
         }
         try {
-            menuItems[index].run();
-            input = null;       // Null indicates a valid response was handled
-        }catch(Exception e) {
+            if(helpRequested.equals(Help.NONE)) {
+                menuItems[index].run();
+                input = null;       // Null indicates a valid response was handled
+            } else {
+                String helpText = (help != null) ? help : "No help available.";
+                if (helpRequested.equals(Help.SELECTION)) {
+                    if(c == EXIT_CHAR) helpText = "This will exit the menu.";
+                    else if (c == HELP_CHAR) helpText = "This will show help.";
+                    else helpText = menuItems[index].getHelp();
+                }
+                if(helpText == null) System.out.println("No help for '" + input + "'.\n");
+                else System.out.println("\n" + helpText + "\n\n");
+                input = null;       // Null indicates a valid response was handled
+            }
+        } catch(Exception e) {
         }
         return input;
     }
@@ -132,7 +183,7 @@ public class Menu {
             String input = runOnce(); // Print menu and get response
             if(input != null) {       // If not null, response was undefined
                 if(Character.toLowerCase(input.charAt(0)) == EXIT_CHAR) break;
-                System.err.println("Invalid menu selection: " + input);
+                System.err.println("Invalid menu selection: " + input + "\n");
             }
         }
     }
@@ -276,8 +327,9 @@ public class Menu {
             sb.append(key + ") " + items[i].toString() + '\n');
         }
         if(data != null) sb.append("\n\n" + data + "\n\n");
-        String exitPrompt = (EXIT_CHAR != ' ') ? "('" + EXIT_CHAR + "' to exit)" : "";
-        sb.append("\nSelection" + exitPrompt + ": ");
+        String parenthetical = "('" + EXIT_CHAR + "' to exit";
+        if(HELP_CHAR != ' ') parenthetical += ", '" + HELP_CHAR + " [key]' for help";
+        sb.append("\nSelection" + parenthetical + "): ");
         return sb.toString();
     }
     /**
@@ -318,5 +370,9 @@ public class Menu {
     private Object title;          // Displayed above the menu
     private Object data;           // Displayed between menu and prompt,
                                    //   usually the data object being built by the menu.
+    private String help;           // Helpful information for the user
     private MenuItem[] menuItems;  // The menu text and associated callback for each element
+    
+    private enum Help {NONE, MAIN, SELECTION}; // Tracks level of help requested
+
 }

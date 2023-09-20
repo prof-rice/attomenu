@@ -26,7 +26,8 @@ import java.util.Objects;
  * Associates menu text with a response when selected.
  * <p>
  * A character key may be optionally specified for selecting this MenuItem object.
- * If omitted, a numeric key will be generated instead.
+ * If omitted, a numeric key will be generated instead. In addition, a String 
+ * containing help text may be provided to be shown to the user on request.
  * <p>
  * MenuItem is philisophically similar to Swing's {@link javax.swing.JMenuItem}, except that
  * MenuItem relies on {@link java.lang.Runnable} rather than {@link java.awt.event.ActionListener}
@@ -47,12 +48,36 @@ public class MenuItem implements Runnable {
      * @param menuText      Text to display when the menu is printed
      * @param menuResponse  Object that delegates to the menu item response
      * @param key           Alternate character to select this menu item
+     * @param help          Optional help text
+     * @since               1.1
+     */
+    public MenuItem(Object menuText, Runnable menuResponse, char key, String help) {
+        this.menuText = menuText;
+        this.menuResponse = menuResponse;
+        this.key = key;
+        this.help = help;
+    }
+    /**
+     * Initializes a MenuItem object with optional help text.
+     *
+     * @param menuText      Text to display when the menu is printed
+     * @param menuResponse  Object that delegates to the menu item response
+     * @param help          Optional help text
+     * @since               1.1
+     */
+    public MenuItem(Object menuText, Runnable menuResponse, String help) {
+        this(menuText, menuResponse, ' ', help);
+    }
+    /**
+     * Initializes a MenuItem object with optional help text.
+     *
+     * @param menuText      Text to display when the menu is printed
+     * @param menuResponse  Object that delegates to the menu item response
+     * @param key           Alternate character to select this menu item
      * @since               1.1
      */
     public MenuItem(Object menuText, Runnable menuResponse, char key) {
-        this.key = key;
-        this.menuText = menuText;
-        this.menuResponse = menuResponse;
+        this(menuText, menuResponse, key, null);
     }
     /**
      * Initializes a MenuItem object with no character key.
@@ -62,13 +87,23 @@ public class MenuItem implements Runnable {
      * @since               1.0
      */
     public MenuItem(Object menuText, Runnable menuResponse) {
-        this(menuText, menuResponse, ' ');
+        this(menuText, menuResponse, ' ', null);
     }
     /**
      * Returns the alternate char to select this MenuItem (space if unset)
+     * 
+     * @since               1.1
      */
     public char getKey() {
         return key;
+    }
+    /**
+     * Returns the help text, or null if not set.
+     * 
+     * @since               1.1
+     */
+    public String getHelp() {
+        return help;
     }
     /**
      * Returns the result of the menuText toString() method.
@@ -84,9 +119,11 @@ public class MenuItem implements Runnable {
     public void run() {
         menuResponse.run();
     }
-    private char key;               // Alternate character to select this menu item
+    
     private Object menuText;        // The text displayed to the user
     private Runnable menuResponse;  // run() is called on this object when selected
+    private char key;               // Alternate character to select this menu item
+    private String help;            // Help text
 
     /**
      * Returns the hash code value for this menuItem.

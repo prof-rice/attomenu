@@ -19,11 +19,12 @@ public class PizzaPearl {
     public PizzaPearl() {
         // pizzaToppings.run() shows the interactive menu.
         // When a selection is made, the lambda (code after () -> ) is run
-        pizzaToppings = new Menu("Pizza Toppings", toppings,
+        String pizzaToppingsHelp = "Select as many toppings as you like!";
+        pizzaToppings = new Menu("Pizza Toppings", toppings, pizzaToppingsHelp,
             new MenuItem("Remove a Topping", () -> removeToppingFromPizza(), 'r'),
             new MenuItem("Extra Cheese", () -> toppings.add("Extra Cheese"), 'c'),
             new MenuItem("Pepperoni", () -> toppings.add("Pepperoni"), 'p'),
-            new MenuItem("Sausage", () -> toppings.add("Sausage"), 's'),
+            new MenuItem("Sausage", () -> toppings.add("Sausage"), 's', "Italian, of course!"),
             new MenuItem("Onions", () -> toppings.add("Onions"), 'o')
         );
         pizzaPearlMenu = new Menu("Place an Order", order,
@@ -32,10 +33,11 @@ public class PizzaPearl {
             new MenuItem("Salad", () -> orderSalad(), 's'),
             new MenuItem("Soda", () -> orderSoda(), 'd')
         );
-        menu = new Menu("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nPizza Pearl Main Menu", orders,
+        String menuHelp = "Welcome to Pizza Pearl, a true discovery in fine Italian dining!";
+        menu = new Menu("==============================\n\nPizza Pearl Main Menu", orders, menuHelp,
             new MenuItem("List orders", () -> System.out.println(orders), 'l'),
-            new MenuItem("Save orders", () -> saveOrders(), 's'),
-            new MenuItem("Place an order", () -> placeAnOrder(), 'p')
+            new MenuItem("Save orders", () -> saveOrders(), 's', "Write the orders to a file"),
+            new MenuItem("Place an order", () -> placeAnOrder(), 'p', "Select your favorite foods!")
         );
         menu.run();
     }
